@@ -1,7 +1,7 @@
 package com.dubeanddube.emodb.services;
 
 import com.dubeanddube.emodb.data.JsonUtils;
-import com.dubeanddube.emodb.search.SearchIndex;
+import com.dubeanddube.emodb.search.SearchEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,9 +30,9 @@ public class Spark {
      *
      * curl "http://localhost:4567/document?color=green"
      *
-     * @param searchIndex the search index instance.
+     * @param searchEngine the search index instance.
      */
-    public Spark(final SearchIndex searchIndex) {
+    public Spark(final SearchEngine searchEngine) {
 
         logger.info("setting up SPARK route /document");
 
@@ -48,11 +48,11 @@ public class Spark {
             if (idParam != null) {
 
                 if (colorParam != null) logger.debug("ignoring color parameter");
-                jsonString = searchIndex.getDocumentById(idParam);
+                jsonString = searchEngine.getDocumentById(idParam);
 
             } else if (colorParam != null) {
 
-                jsonString = searchIndex.getDocumentsByColor(colorParam);
+                jsonString = searchEngine.getDocumentsByColor(colorParam);
 
             } else {
 

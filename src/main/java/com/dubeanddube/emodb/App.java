@@ -8,7 +8,7 @@ import com.dubeanddube.emodb.services.EmoBus;
 import com.dubeanddube.emodb.services.EmoSor;
 import com.dubeanddube.emodb.services.EmoGen;
 import com.dubeanddube.emodb.services.Spark;
-import com.dubeanddube.emodb.search.SearchIndex;
+import com.dubeanddube.emodb.search.SearchEngine;
 import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,10 +35,9 @@ public class App {
         System.setProperty(SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG");
     }
 
-    // TODO: use Elasticsearch as default, the memory hash map will be fall back
-    private static final SearchIndex.IndexType INDEX_TYPE = SearchIndex.IndexType.MEMORY_HASH_MAP;
+    private static final SearchEngine.IndexType INDEX_TYPE = SearchEngine.IndexType.LOCAL_ELASTIC_SEARCH;
 
-    private SearchIndex searchIndex;
+    private SearchEngine searchEngine;
 
     private static final int SUBSCRIPTION_POLL_TIME_MILLIS = 2000;
     private static final int DOCUMENT_UPDATE_TIME_MILLIS = 1000;
@@ -65,7 +64,7 @@ public class App {
      * Upon completion of the initialization phase, establishes a RESTful interface at
      * localhost:4567 for requests to the search index.
      *
-     * @see Spark#Spark(SearchIndex) for details on possible requests at localhost:4567.
+     * @see Spark#Spark(SearchEngine) for details on possible requests at localhost:4567.
      */
     private void start() {
 
@@ -116,17 +115,15 @@ public class App {
                     (tableSize == 100 ? " (just what I expected)" : " (should be 100)"));
         }
 
-        // TODO: ihandle search index creation also when Elasticsearch reverts to memory-based
-
         logger.info("Setting up search index of type " + INDEX_TYPE + "...");
 
-        searchIndex = new SearchIndex(INDEX_TYPE);
+        searchEngine = new SearchEngine(INDEX_TYPE);
 
-        logger.info("Created search index of index type = " + searchIndex.getIndexType());
+        logger.info("Created search index of index type = " + searchEngine.getIndexType());
 
         logger.info("Loading sample data into search index...");
 
-        if (! searchIndex.loadSampleData()) {
+        if (! searchEngine.loadSampleData()) {
             logger.warn("Failed to load sample data into search index - continuing anyway");
         } else {
             logger.info("Successfully loaded sample data into search index");
@@ -134,7 +131,7 @@ public class App {
 
         // ready to start the query service at this point
 
-        Spark spark = new Spark(searchIndex);
+        Spark spark = new Spark(searchEngine);
 
         int retries = 10; // wait 10 seconds max
         boolean success = false;
@@ -239,7 +236,8 @@ public class App {
                 } catch (InterruptedException ignored) {
                 }
 
-                logger.debug("polling subscription again after " + SUBSCRIPTION_POLL_TIME_MILLIS + " milliseconds");
+                logger.debug("polling subscription again after " +
+                        SUBSCRIPTION_POLL_TIME_MILLIS + " milliseconds");
 
                 int numUnclaimedEvents = EmoBus.getNumPendingEvents(); // just an estimate
 
@@ -301,7 +299,7 @@ public class App {
 
                     VersionedIDItem idItem = new VersionedIDItem(id, item, versionInt);
 
-                    if (! searchIndex.updateDocument(idItem)) {
+                    if (! searchEngine.updateDocument(idItem)) {
 
                         logger.info("event key " + eventKey +
                                 " was not updated in search index (possibly outdated)");

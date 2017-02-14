@@ -15,7 +15,7 @@ import java.io.IOException;
  *
  * @author Dominique Dube
  */
-class HttpUtils {
+public class HttpUtils {
 
     /**
      * Adds the API header to the specified request.
@@ -33,7 +33,7 @@ class HttpUtils {
      * @param url the URL to get.
      * @return the response from the GET, <code>null</code> if unsuccessful.
      */
-    static String get(String url) {
+    public static String get(String url) {
 
         CloseableHttpClient client = HttpClientBuilder.create().build();
         CloseableHttpResponse response = null;
@@ -61,7 +61,7 @@ class HttpUtils {
      * @param response the response that is to be cleaned up.
      * @param client the client that is to be cleaned up.
      */
-    static void cleanup(CloseableHttpResponse response, CloseableHttpClient client) {
+    public static void cleanup(CloseableHttpResponse response, CloseableHttpClient client) {
 
         try {
             if (response != null) response.close();
